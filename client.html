@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WorthyOps Dashboard — My Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── SIDEBAR ─────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sb-brand">
+        <div class="sb-mark">
+          <span style="color:#fff;font-weight:800;font-size:14px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1;">W</span>
+        </div>
+        <div>
+          <div class="sb-title">WorthyOps Dashboard</div>
+          <div class="sb-sub">My Dashboard</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">Navigation</div>
+      <div class="nav-link active" data-tab="overview">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+        </svg>
+        Overview
+      </div>
+      <div class="nav-link" data-tab="deals">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
+          <line x1="3" y1="18" x2="3.01" y2="18"/>
+        </svg>
+        My Deals
+      </div>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="user-row">
+        <div class="user-av" id="client-av">C</div>
+        <div class="user-meta">
+          <div class="user-name-s" id="client-name-s">Client</div>
+          <div class="user-role-s">Client Account</div>
+        </div>
+        <button class="logout-btn" onclick="Auth.logout()" title="Sign out">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ───────────────────────────────────────────── -->
+  <div class="main" id="top">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h2 id="welcome-heading">Welcome back</h2>
+        <p id="welcome-sub">Here's how your business is performing</p>
+      </div>
+      <div class="topbar-right">
+        <span style="font-size:11px;color:var(--text-3);margin-right:6px;" id="last-updated"></span>
+        <button id="client-sync-btn" class="btn btn-ghost btn-sm" onclick="doRefresh()" title="Sync latest data">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+          </svg>
+          Sync
+        </button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ══ OVERVIEW ══════════════════════════════════════════ -->
+      <div id="panel-overview">
+
+      <!-- Hero banner -->
+      <div class="hero-banner mb-20">
+        <div class="hero-text">
+          <h2 id="hero-greeting">Your Performance</h2>
+          <p id="hero-sub">Overview across all your deals</p>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <div class="hero-stat-num" id="hero-revenue">₹0</div>
+            <div class="hero-stat-lbl">Revenue</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-num" id="hero-pipeline">₹0</div>
+            <div class="hero-stat-lbl">Pipeline</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-num" id="hero-winrate">0%</div>
+            <div class="hero-stat-lbl">Win Rate</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sparkline stat cards -->
+      <div class="spark-cards-row">
+        <div class="spark-card">
+          <div class="spark-card-label">Revenue Earned</div>
+          <div class="spark-card-val" id="spark-rev-val">₹0</div>
+          <div class="spark-card-meta">
+            <span class="spark-badge spark-badge-neutral" id="spark-rev-badge">—</span>
+            <span class="spark-card-prev" id="spark-rev-prev">vs prev year</span>
+          </div>
+          <div class="spark-chart-wrap"><canvas id="spark-rev-chart"></canvas></div>
+          <div class="spark-axis"><span id="spark-rev-start">—</span><span>Today</span></div>
+        </div>
+        <div class="spark-card spark-card-stat">
+          <div class="spark-card-label">Pipeline Value</div>
+          <div class="spark-card-val" id="spark-pipe-val">₹0</div>
+          <div class="spark-card-meta">
+            <span class="spark-card-sub">Active deals in progress</span>
+          </div>
+        </div>
+        <div class="spark-card spark-card-stat">
+          <div class="spark-card-label">Deals Closed</div>
+          <div class="spark-card-val" id="spark-closed-val">0</div>
+          <div class="spark-card-meta">
+            <span class="spark-card-sub">Total closed to date</span>
+          </div>
+        </div>
+        <div class="spark-card spark-card-stat">
+          <div class="spark-card-label">Win Rate</div>
+          <div class="spark-card-val" id="spark-win-val">0%</div>
+          <div class="spark-card-meta">
+            <span class="spark-card-sub">Closed ÷ (closed + lost)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue Goal Bar -->
+      <div class="card mb-14" id="goal-bar-section">
+        <div class="card-head">
+          <div>
+            <h3 id="goal-bar-title">Revenue Goal</h3>
+            <p id="goal-bar-subtitle">This month's closed revenue vs target</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:12px;color:var(--text-2);" id="goal-bar-remaining"></span>
+            <span class="tag" id="goal-bar-pct">—</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="prog-track" style="height:14px;border-radius:99px;">
+            <div id="goal-bar-fill" style="height:14px;border-radius:99px;width:0%;background:#7C3AED;transition:width .6s cubic-bezier(.4,0,.2,1);"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--text-3);">
+            <span id="goal-bar-month-label">Revenue &nbsp;</span><strong class="txt-emerald" id="goal-bar-current">₹0</strong>
+            <span id="goal-bar-target-wrap">Target &nbsp;<strong style="color:var(--text-1)" id="goal-bar-target">—</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deal Breakdown -->
+      <div class="card mb-14">
+        <div class="card-head">
+          <div><h3>Deal Breakdown</h3><p>Status distribution</p></div>
+          <div style="display:flex;gap:14px;font-size:12px;color:var(--text-2);">
+            <span>Total <strong id="meta-total" style="color:var(--text-1)">0</strong></span>
+            <span>This month <strong id="meta-month" class="txt-emerald">0</strong></span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="breakdown-bars">
+            <p style="font-size:13px;color:var(--text-3);">No deals yet.</p>
+          </div>
+        </div>
+      </div>
+
+      </div><!-- /panel-overview -->
+
+      <!-- ══ MY DEALS ══════════════════════════════════════════ -->
+      <div id="panel-deals" style="display:none">
+        <div class="filter-row">
+          <div class="search-wrap">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input class="inp" type="text" id="deals-search" placeholder="Search deals or contacts…">
+          </div>
+          <select class="inp" id="deals-status">
+            <option value="">All Statuses</option>
+            <option value="closed">Closed</option>
+            <option value="pipeline">Pipeline</option>
+            <option value="lost">Lost</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr><th>Deal</th><th>Value</th><th>Status</th><th>Date</th><th>Notes</th></tr>
+              </thead>
+              <tbody id="deals-body">
+                <tr><td colspan="5" style="text-align:center;padding:52px;color:var(--text-3);font-size:13px;">
+                  No deals yet — your admin will upload your data shortly.
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /panel-deals -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/client.js"></script>
+</body>
+</html>

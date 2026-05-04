@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WorthyOps Dashboard — Sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="login-page">
+  <div class="login-wrap">
+
+    <div class="login-brand">
+      <div class="brand-mark">
+        <span style="color:#fff;font-weight:800;font-size:19px;font-family:'Plus Jakarta Sans',sans-serif;line-height:1;">W</span>
+      </div>
+      <span class="brand-name">WorthyOps Dashboard</span>
+    </div>
+
+    <div class="login-card">
+      <h1 class="login-heading">Welcome back</h1>
+      <p class="login-sub">Sign in to your performance dashboard</p>
+
+      <div id="alert" class="alert-error"></div>
+
+      <form id="login-form" autocomplete="on">
+        <div class="field">
+          <label>Email address</label>
+          <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" style="margin-top:6px;">
+          Sign in &nbsp;→
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  (async function() {
+    // Already logged in — skip straight to dashboard
+    const s = Auth.getSession();
+    if (s) { window.location.href = s.role === 'admin' ? 'admin.html' : 'client.html'; return; }
+
+    // Load users from Google Sheets so login can validate credentials
+    showLoading('Connecting…');
+    let loadError = false;
+    try {
+      await DB.initUsers();
+    } catch (e) {
+      loadError = true;
+      console.error('DB.initUsers failed:', e);
+    }
+    hideLoading();
+
+    const alertEl = document.getElementById('alert');
+    if (loadError || DB.getUsers().length === 0) {
+      alertEl.textContent = 'Could not connect to the database. Check your Apps Script URL and try again.';
+      alertEl.style.display = 'block';
+    }
+
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email   = document.getElementById('email').value.trim();
+      const pass    = document.getElementById('password').value;
+      const user    = Auth.login(email, pass);
+      if (!user) { alertEl.textContent = 'Incorrect email or password.'; alertEl.style.display = 'block'; return; }
+      alertEl.style.display = 'none';
+      window.location.href = user.role === 'admin' ? 'admin.html' : 'client.html';
+    });
+  })();
+</script>
+</body>
+</html>
