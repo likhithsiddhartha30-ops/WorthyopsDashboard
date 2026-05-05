@@ -4,6 +4,18 @@
 
 var SS = SpreadsheetApp.openById('11AxOqVmewXWHcC6r9Dy7c_H38zQG50CjADvutJoz5sw');
 
+// Clients whose deals live in a separate spreadsheet.
+// Key = exact client name as stored in the Clients sheet.
+var CLIENT_SS_IDS = {
+  'Aditya Singh': '136yS1gyF42m5HNHpareirqGjBHsnEh6tHgS7y9yP1HE'
+};
+
+function ssForClient(name) {
+  return CLIENT_SS_IDS[name]
+    ? SpreadsheetApp.openById(CLIENT_SS_IDS[name])
+    : SS;
+}
+
 function doGet(e) {
   var p      = e.parameter;
   var action = p.action || '';
@@ -12,14 +24,14 @@ function doGet(e) {
 
   try {
     switch (action) {
-      case 'getUsers':     result = sheetRows('Users');            break;
-      case 'getClients':   result = sheetRows('Clients');          break;
-      case 'getDeals':     result = sheetRows(p.clientName || ''); break;
-      case 'addClient':    result = addClient(data);               break;
-      case 'addDeals':     result = addDeals(data);                break;
-      case 'deleteClient': result = deleteClient(data);            break;
-      case 'deleteDeal':   result = deleteDeal(data);              break;
-      case 'setGoal':      result = setGoal(data);                 break;
+      case 'getUsers':     result = sheetRows(SS, 'Users');                                   break;
+      case 'getClients':   result = sheetRows(SS, 'Clients');                                 break;
+      case 'getDeals':     result = sheetRows(ssForClient(p.clientName), p.clientName || ''); break;
+      case 'addClient':    result = addClient(data);                                          break;
+      case 'addDeals':     result = addDeals(data);                                           break;
+      case 'deleteClient': result = deleteClient(data);                                       break;
+      case 'deleteDeal':   result = deleteDeal(data);                                         break;
+      case 'setGoal':      result = setGoal(data);                                            break;
       default:             result = { error: 'Unknown action: ' + action };
     }
   } catch (err) {
@@ -35,8 +47,9 @@ function doGet(e) {
 
 // ── SHEET HELPERS ─────────────────────────────────────────────
 
-function sheetRows(name) {
-  var sheet = SS.getSheetByName(name);
+function sheetRows(ss, name) {
+  // For external spreadsheets try the named tab first, fall back to the first sheet
+  var sheet = ss.getSheetByName(name) || (ss !== SS ? ss.getSheets()[0] : null);
   if (!sheet) return [];
   var vals = sheet.getDataRange().getValues();
   if (vals.length < 2) return [];
@@ -51,16 +64,17 @@ function sheetRows(name) {
 }
 
 function clientSheet(name) {
-  var s = SS.getSheetByName(name);
+  var ss = ssForClient(name);
+  var s  = ss.getSheetByName(name);
   if (!s) {
-    s = SS.insertSheet(name);
-    s.appendRow(['id', 'name', 'value', 'status', 'date', 'notes', 'contact', 'addedAt']);
+    s = ss.insertSheet(name);
+    s.appendRow(['id', 'name', 'value', 'status', 'date', 'notes', 'contact', 'addedAt', 'owe']);
   }
   return s;
 }
 
-function removeRows(sheetName, colName, value) {
-  var sheet = SS.getSheetByName(sheetName);
+function removeRows(ss, sheetName, colName, value) {
+  var sheet = ss.getSheetByName(sheetName);
   if (!sheet) return;
   var vals         = sheet.getDataRange().getValues();
   var headers      = vals[0].map(String);
@@ -87,22 +101,25 @@ function addDeals(p) {
     sheet.appendRow([
       d.id, d.name, d.value, d.status,
       d.date || '', d.notes || '', d.contact || '',
-      d.addedAt || new Date().toISOString()
+      d.addedAt || new Date().toISOString(), d.owe || 0
     ]);
   });
   return { ok: true };
 }
 
 function deleteClient(p) {
-  removeRows('Clients', 'id', p.clientId);
-  removeRows('Users', 'clientId', p.clientId);
-  var s = SS.getSheetByName(p.clientName);
-  if (s) SS.deleteSheet(s);
+  removeRows(SS, 'Clients', 'id', p.clientId);
+  removeRows(SS, 'Users', 'clientId', p.clientId);
+  // Only delete the in-spreadsheet tab for clients that don't have their own external SS
+  if (!CLIENT_SS_IDS[p.clientName]) {
+    var s = SS.getSheetByName(p.clientName);
+    if (s) SS.deleteSheet(s);
+  }
   return { ok: true };
 }
 
 function deleteDeal(p) {
-  removeRows(p.clientName, 'id', p.dealId);
+  removeRows(ssForClient(p.clientName), p.clientName, 'id', p.dealId);
   return { ok: true };
 }
 

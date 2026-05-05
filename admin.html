@@ -7,7 +7,7 @@ e<!DOCTYPE html>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -124,6 +124,10 @@ e<!DOCTYPE html>
               <div class="hero-stat-lbl">Pipeline</div>
             </div>
             <div class="hero-stat">
+              <div class="hero-stat-num" id="hero-owe">₹0</div>
+              <div class="hero-stat-lbl">Owe</div>
+            </div>
+            <div class="hero-stat">
               <div class="hero-stat-num" id="hero-clients">0</div>
               <div class="hero-stat-lbl">Clients</div>
             </div>
@@ -163,6 +167,13 @@ e<!DOCTYPE html>
               <span class="spark-card-sub">Accounts on platform</span>
             </div>
           </div>
+          <div class="spark-card spark-card-stat">
+            <div class="spark-card-label">Owe</div>
+            <div class="spark-card-val txt-rose" id="spark-owe-val">₹0</div>
+            <div class="spark-card-meta">
+              <span class="spark-card-sub">Total amount owed</span>
+            </div>
+          </div>
         </div>
 
         <!-- Top Clients -->
@@ -183,7 +194,7 @@ e<!DOCTYPE html>
           <div class="tbl-wrap">
             <table>
               <thead>
-                <tr><th>Deal</th><th>Client</th><th>Value</th><th>Status</th><th>Date</th></tr>
+                <tr><th>Deal</th><th>Client</th><th>Type</th><th>Value</th><th>Owe</th><th>Status</th><th>Date</th></tr>
               </thead>
               <tbody id="recent-deals"></tbody>
             </table>
@@ -221,6 +232,7 @@ e<!DOCTYPE html>
             <input class="inp" type="text" id="deal-search" placeholder="Search deals…">
           </div>
           <select class="inp" id="deal-client-filter"><option value="">All Clients</option></select>
+          <select class="inp" id="deal-type-filter"><option value="">All Types</option></select>
           <select class="inp" id="deal-status-filter">
             <option value="">All Statuses</option>
             <option value="closed">Closed</option>
@@ -231,7 +243,7 @@ e<!DOCTYPE html>
         <div class="card">
           <div class="tbl-wrap">
             <table>
-              <thead><tr><th>Deal</th><th>Client</th><th>Value</th><th>Status</th><th>Date</th><th></th></tr></thead>
+              <thead><tr><th>Deal</th><th>Client</th><th>Type</th><th>Value</th><th>Owe</th><th>Status</th><th>Date</th><th></th></tr></thead>
               <tbody id="deals-body"></tbody>
             </table>
           </div>

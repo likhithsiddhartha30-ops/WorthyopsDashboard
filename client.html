@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -107,8 +107,12 @@
             <div class="hero-stat-lbl">Pipeline</div>
           </div>
           <div class="hero-stat">
+            <div class="hero-stat-num" id="hero-owe">₹0</div>
+            <div class="hero-stat-lbl">Owe</div>
+          </div>
+          <div class="hero-stat">
             <div class="hero-stat-num" id="hero-winrate">0%</div>
-            <div class="hero-stat-lbl">Win Rate</div>
+            <div class="hero-stat-lbl">Close Rate</div>
           </div>
         </div>
       </div>
@@ -140,10 +144,17 @@
           </div>
         </div>
         <div class="spark-card spark-card-stat">
-          <div class="spark-card-label">Win Rate</div>
+          <div class="spark-card-label">Close Rate</div>
           <div class="spark-card-val" id="spark-win-val">0%</div>
           <div class="spark-card-meta">
             <span class="spark-card-sub">Closed ÷ (closed + lost)</span>
+          </div>
+        </div>
+        <div class="spark-card spark-card-stat">
+          <div class="spark-card-label">Owe</div>
+          <div class="spark-card-val txt-rose" id="spark-owe-val">₹0</div>
+          <div class="spark-card-meta">
+            <span class="spark-card-sub">Total amount owed</span>
           </div>
         </div>
       </div>
@@ -198,18 +209,20 @@
             </svg>
             <input class="inp" type="text" id="deals-search" placeholder="Search deals or contacts…">
           </div>
+          <select class="inp" id="deals-type"><option value="">All Types</option></select>
           <select class="inp" id="deals-status">
             <option value="">All Statuses</option>
             <option value="closed">Closed</option>
             <option value="pipeline">Pipeline</option>
             <option value="lost">Lost</option>
+            <option value="owes">Owes</option>
           </select>
         </div>
         <div class="card">
           <div class="tbl-wrap">
             <table>
               <thead>
-                <tr><th>Deal</th><th>Value</th><th>Status</th><th>Date</th><th>Notes</th></tr>
+                <tr><th>Deal</th><th>Type</th><th>Value</th><th>Owe</th><th>Status</th><th>Date</th><th>Notes</th><th></th></tr>
               </thead>
               <tbody id="deals-body">
                 <tr><td colspan="5" style="text-align:center;padding:52px;color:var(--text-3);font-size:13px;">

@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('deals-search').addEventListener('input', applyFilters);
   document.getElementById('deals-status').addEventListener('change', applyFilters);
+  document.getElementById('deals-type').addEventListener('change', applyFilters);
 
   setInterval(doRefresh, 30000);
   setInterval(updateSyncLabel, 10000);
@@ -90,6 +91,7 @@ function render() {
 
   countUp('hero-revenue',  s.revenueGenerated, true);
   countUp('hero-pipeline', s.revenuePipeline,  true);
+  countUp('hero-owe',      s.revenueOwe,       true);
   document.getElementById('hero-winrate').textContent = s.winRate + '%';
 
   document.getElementById('meta-total').textContent = s.totalDeals;
@@ -156,10 +158,10 @@ function renderBreakdown(s) {
     el.innerHTML = `<p style="font-size:13px;color:var(--text-3);">No deals yet.</p>`;
     return;
   }
-  el.innerHTML = [
-    { label: 'Closed',   val: s.closedDeals,   cls: 'emerald', color: 'var(--emerald)' },
-    { label: 'Pipeline', val: s.pipelineDeals,  cls: 'amber',   color: 'var(--amber)' },
-    { label: 'Lost',     val: s.lostDeals,      cls: '',        color: 'var(--text-3)' },
+  const dealRows = [
+    { label: 'Closed',   val: s.closedDeals,  cls: 'emerald', color: 'var(--emerald)' },
+    { label: 'Pipeline', val: s.pipelineDeals, cls: 'amber',   color: 'var(--amber)' },
+    { label: 'Lost',     val: s.lostDeals,     cls: '',        color: 'var(--text-3)' },
   ].map(row => `
     <div class="prog-wrap">
       <div class="prog-label">
@@ -171,6 +173,23 @@ function renderBreakdown(s) {
       </div>
     </div>
   `).join('');
+
+  const oweMax   = Math.max(s.revenueOwe, s.revenueGenerated, s.revenuePipeline, 1);
+  const owePct   = Math.round(s.revenueOwe / oweMax * 100);
+  const oweRow   = `
+    <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+    <div class="prog-wrap">
+      <div class="prog-label">
+        <span class="pl-name">Owe</span>
+        <span class="pl-val" style="color:#FCA5A5;">${formatCurrency(s.revenueOwe)}</span>
+      </div>
+      <div class="prog-track">
+        <div class="prog-fill" style="width:${owePct}%;background:#FCA5A5;"></div>
+      </div>
+    </div>
+  `;
+
+  el.innerHTML = dealRows + oweRow;
 }
 
 // ── SPARK CARDS ───────────────────────────────────────────────
@@ -202,6 +221,7 @@ function renderSparkCards(deals) {
   set('spark-pipe-val',   formatCurrency(s.revenuePipeline));
   set('spark-closed-val', s.closedDeals);
   set('spark-win-val',    s.winRate + '%');
+  set('spark-owe-val',    formatCurrency(s.revenueOwe));
 
   const badge = document.getElementById('spark-rev-badge');
   const prev  = document.getElementById('spark-rev-prev');
@@ -353,12 +373,29 @@ function renderLineChart(deals) {
 function applyFilters() {
   const search = document.getElementById('deals-search').value.toLowerCase();
   const status = document.getElementById('deals-status').value;
-  renderDealsTable(DealHelper.forClient(clientId), status, search);
+  const type   = document.getElementById('deals-type').value;
+  renderDealsTable(DealHelper.forClient(clientId), status, search, type);
 }
 
-function renderDealsTable(deals, status = '', search = '') {
+function populateTypeDropdown(deals) {
+  const sel   = document.getElementById('deals-type');
+  const prev  = sel.value;
+  const types = [...new Set(deals.map(d => d.type || '').filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All Types</option>';
+  types.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t; o.textContent = t;
+    sel.appendChild(o);
+  });
+  sel.value = prev;
+}
+
+function renderDealsTable(deals, status = '', search = '', type = '') {
+  populateTypeDropdown(deals);
   let rows = [...deals];
-  if (status) rows = rows.filter(d => d.status === status);
+  if (type)            rows = rows.filter(d => (d.type || '') === type);
+  if (status === 'owes') rows = rows.filter(d => (+d.owe || 0) > 0);
+  else if (status)       rows = rows.filter(d => d.status === status);
   if (search) rows = rows.filter(d =>
     d.name.toLowerCase().includes(search) ||
     (d.contact || '').toLowerCase().includes(search));
@@ -370,17 +407,50 @@ function renderDealsTable(deals, status = '', search = '') {
     return;
   }
   el.innerHTML = rows.map(d => `
-    <tr>
+    <tr class="deal-row" onclick="toggleDealDetail('${d.id}')">
       <td>
         <div class="fw7">${esc(d.name)}</div>
         ${d.contact ? `<div style="font-size:11px;color:var(--text-3);margin-top:2px;">${esc(d.contact)}</div>` : ''}
       </td>
+      <td class="txt2">${esc(d.type || '—')}</td>
       <td class="fw7 txt-emerald">${formatCurrency(d.value)}</td>
+      <td class="fw7 txt-rose">${formatCurrency(d.owe || 0)}</td>
       <td>${badge(d.status)}</td>
       <td class="txt3">${formatDate(d.date)}</td>
-      <td class="txt2" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(d.notes || '—')}</td>
+      <td class="txt2" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(d.notes || '—')}</td>
+      <td><svg class="deal-chevron" id="chev-${d.id}" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></td>
+    </tr>
+    <tr class="deal-detail-row" id="detail-${d.id}" style="display:none">
+      <td colspan="8">
+        <div class="deal-detail-panel">
+          ${clientDetailItem('Deal Name', d.name)}
+          ${clientDetailItem('Type',      d.type    || '—')}
+          ${clientDetailItem('Contact',   d.contact || '—')}
+          ${clientDetailItem('Status',    d.status  || '—')}
+          ${clientDetailItem('Value',     formatCurrency(d.value))}
+          ${clientDetailItem('Owe', formatCurrency(d.owe || 0), '#FCA5A5')}
+          ${clientDetailItem('Date',      d.date ? formatDate(d.date) : '—')}
+          ${d.notes ? clientDetailItem('Notes', d.notes, null, true) : ''}
+        </div>
+      </td>
     </tr>
   `).join('');
+}
+
+function clientDetailItem(label, value, color, muted) {
+  return `<div class="ddp-item">
+    <div class="ddp-label">${label}</div>
+    <div class="ddp-val${muted ? ' muted' : ''}" style="${color ? 'color:' + color : ''}">${String(value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+  </div>`;
+}
+
+function toggleDealDetail(id) {
+  const row  = document.getElementById('detail-' + id);
+  const chev = document.getElementById('chev-' + id);
+  if (!row) return;
+  const open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : 'table-row';
+  if (chev) chev.classList.toggle('open', !open);
 }
 
 // ── HELPERS ───────────────────────────────────────────────────

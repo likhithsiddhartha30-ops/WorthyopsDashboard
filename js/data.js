@@ -153,6 +153,7 @@ const DealHelper = {
       revenueGenerated: closed.reduce((s, d) => s + (+d.value || 0), 0),
       revenuePipeline:  pipeline.reduce((s, d) => s + (+d.value || 0), 0),
       revenueTotal:     deals.reduce((s, d) => s + (+d.value || 0), 0),
+      revenueOwe:       deals.reduce((s, d) => s + (+d.owe || 0), 0),
       lostDeals:        lost.length,
       closedThisMonth:  closed.filter(d => isThisMonth(dealDate(d))).length,
       winRate: deals.length
@@ -267,7 +268,8 @@ function parseCSV(text) {
       status:  ['status', 'stage'],
       date:    ['date', 'close_date', 'closed_date', 'deal_date'],
       notes:   ['notes', 'description', 'note'],
-      contact: ['contact', 'client_name', 'contact_name']
+      contact: ['contact', 'client_name', 'contact_name'],
+      owe:     ['owe', 'amount_owed', 'owed', 'outstanding'],
     };
     for (const a of aliases[key]) { const i = headers.indexOf(a); if (i !== -1) return i; }
     return -1;
@@ -275,6 +277,7 @@ function parseCSV(text) {
 
   const nameIdx    = col('name'),  valueIdx  = col('value'), statusIdx = col('status');
   const dateIdx    = col('date'),  notesIdx  = col('notes'), contactIdx = col('contact');
+  const oweIdx     = col('owe');
 
   if (nameIdx  === -1) return { deals: [], errors: ['Missing required column: deal_name / name / title'] };
   if (valueIdx === -1) return { deals: [], errors: ['Missing required column: value / amount / revenue'] };
@@ -289,8 +292,9 @@ function parseCSV(text) {
     const date    = dateIdx    !== -1 ? normalizeDate((cols[dateIdx]   || '').replace(/['"]/g, '').trim()) : '';
     const notes   = notesIdx   !== -1 ? (cols[notesIdx]   || '').replace(/['"]/g, '').trim() : '';
     const contact = contactIdx !== -1 ? (cols[contactIdx] || '').replace(/['"]/g, '').trim() : '';
+    const owe     = oweIdx     !== -1 ? parseFloat((cols[oweIdx] || '').replace(/['"$,]/g, '')) || 0 : 0;
     if (!name) { errors.push(`Row ${i + 1}: missing deal name`); continue; }
-    deals.push({ id: uid(), name, value, status, date, notes, contact, addedAt: new Date().toISOString() });
+    deals.push({ id: uid(), name, value, owe, status, date, notes, contact, addedAt: new Date().toISOString() });
   }
   return { deals, errors };
 }
@@ -351,6 +355,7 @@ function normalizeDeal(raw, clientId) {
     ...d,
     clientId,
     value:  +d.value || 0,
+    owe:    +d.owe   || 0,
     status: normalizeStatus((d.status || 'pipeline').toLowerCase().trim()),
   };
 }

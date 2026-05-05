@@ -613,7 +613,7 @@ tbody tr:hover td { background:var(--surface-2); }
 /* ── SPARKLINE CARDS ────────────────────────────────────── */
 .spark-cards-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
   margin-bottom: 14px;
 }
@@ -684,12 +684,46 @@ tbody tr:hover td { background:var(--surface-2); }
   color: var(--text-3);
   padding: 7px 0 12px;
 }
+@media (max-width: 1200px) {
+  .spark-cards-row { grid-template-columns: repeat(3, 1fr); }
+}
 @media (max-width: 1000px) {
   .spark-cards-row { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 540px) {
   .spark-cards-row { grid-template-columns: 1fr; }
 }
+
+/* ── DEAL EXPAND ROW ────────────────────────────────────── */
+.deal-row { cursor: pointer; }
+.deal-row:hover td { background: var(--surface-2); }
+.deal-chevron { transition: transform .2s ease; color: var(--text-3); flex-shrink: 0; }
+.deal-chevron.open { transform: rotate(180deg); }
+.deal-detail-row > td { padding: 0 !important; border-top: none !important; }
+.deal-detail-panel {
+  padding: 16px 20px 20px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px 24px;
+}
+.ddp-item {}
+.ddp-label {
+  font-size: 10px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.ddp-val {
+  font-size: 13px;
+  color: var(--text-1);
+  font-weight: 600;
+  word-break: break-word;
+}
+.ddp-val.muted { color: var(--text-2); font-weight: 400; }
 
 /* ── SCROLLBAR ──────────────────────────────────────────── */
 ::-webkit-scrollbar { width:4px; height:4px; }

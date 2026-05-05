@@ -131,10 +131,12 @@ function renderSparkCards(deals, clientCount) {
   set('spark-pipe-val',    formatCurrency(s.revenuePipeline));
   set('spark-closed-val',  s.closedDeals);
   set('spark-clients-val', clientCount ?? 0);
+  set('spark-owe-val',     formatCurrency(s.revenueOwe));
 
   // Also update hero banner
   countUp('hero-revenue',  s.revenueGenerated, true);
   countUp('hero-pipeline', s.revenuePipeline,  true);
+  countUp('hero-owe',      s.revenueOwe,       true);
   const hc = document.getElementById('hero-clients');
   if (hc) hc.textContent = clientCount ?? 0;
 
@@ -311,18 +313,63 @@ function renderRecentDeals(allDeals, clients) {
   const recent = [...allDeals].sort((a, b) => new Date(b.addedat || b.addedAt || 0) - new Date(a.addedat || a.addedAt || 0)).slice(0, 8);
 
   if (!recent.length) {
-    el.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-3);font-size:13px;">No deals yet</td></tr>`;
+    el.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-3);font-size:13px;">No deals yet</td></tr>`;
     return;
   }
-  el.innerHTML = recent.map(d => `
-    <tr>
+  el.innerHTML = recent.map(d => dealRowHtml(d, map[d.clientId] || '—', 8, false)).join('');
+}
+
+function dealRowHtml(d, clientName, colspan, showDelete) {
+  const chevron = `<svg class="deal-chevron" id="chev-${d.id}" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
+  const deleteBtn = showDelete ? `
+    <button class="btn btn-danger btn-sm btn-icon" onclick="event.stopPropagation();deleteDeal('${d.id}')">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+      </svg>
+    </button>` : '';
+
+  return `
+    <tr class="deal-row" onclick="toggleDealDetail('${d.id}')">
       <td class="fw7">${esc(d.name)}</td>
-      <td class="txt2">${esc(map[d.clientId] || '—')}</td>
+      ${clientName !== null ? `<td class="txt2">${esc(clientName)}</td>` : ''}
+      <td class="txt2">${esc(d.type || '—')}</td>
       <td class="fw7 txt-emerald">${formatCurrency(d.value)}</td>
+      <td class="fw7 txt-rose">${formatCurrency(d.owe || 0)}</td>
       <td>${badge(d.status)}</td>
       <td class="txt3">${formatDate(d.date)}</td>
+      <td><div style="display:flex;align-items:center;gap:6px;">${chevron}${deleteBtn}</div></td>
     </tr>
-  `).join('');
+    <tr class="deal-detail-row" id="detail-${d.id}" style="display:none">
+      <td colspan="${colspan}">
+        <div class="deal-detail-panel">
+          ${detailItem('Deal Name',  d.name)}
+          ${detailItem('Type',       d.type   || '—')}
+          ${detailItem('Contact',    d.contact || '—')}
+          ${detailItem('Status',     d.status  || '—')}
+          ${detailItem('Value',      formatCurrency(d.value))}
+          ${detailItem('Owe', formatCurrency(d.owe || 0), '#FCA5A5')}
+          ${detailItem('Date',       d.date   ? formatDate(d.date) : '—')}
+          ${detailItem('Added On',   d.addedat || d.addedAt ? formatDate(d.addedat || d.addedAt) : '—')}
+          ${d.notes ? detailItem('Notes', d.notes, null, true) : ''}
+        </div>
+      </td>
+    </tr>`;
+}
+
+function detailItem(label, value, color, muted) {
+  return `<div class="ddp-item">
+    <div class="ddp-label">${esc(label)}</div>
+    <div class="ddp-val${muted ? ' muted' : ''}" style="${color ? 'color:' + color : ''}">${esc(String(value))}</div>
+  </div>`;
+}
+
+function toggleDealDetail(id) {
+  const row  = document.getElementById('detail-' + id);
+  const chev = document.getElementById('chev-' + id);
+  if (!row) return;
+  const open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : 'table-row';
+  if (chev) chev.classList.toggle('open', !open);
 }
 
 // ── CLIENTS ───────────────────────────────────────────────────
@@ -367,6 +414,7 @@ function renderClients(filter = '') {
         <div class="cc-stats">
           <div class="mini-stat"><div class="ms-val txt-emerald">${formatCurrency(s.revenueGenerated)}</div><div class="ms-lbl">Revenue</div></div>
           <div class="mini-stat"><div class="ms-val txt-amber">${formatCurrency(s.revenuePipeline)}</div><div class="ms-lbl">Pipeline</div></div>
+          <div class="mini-stat"><div class="ms-val txt-rose">${formatCurrency(s.revenueOwe)}</div><div class="ms-lbl">Owe</div></div>
           <div class="mini-stat"><div class="ms-val">${s.closedDeals}</div><div class="ms-lbl">Closed</div></div>
           <div class="mini-stat"><div class="ms-val">${s.winRate}%</div><div class="ms-lbl">Win Rate</div></div>
         </div>
@@ -417,9 +465,23 @@ function renderAllDeals() {
   });
   sel.value = prevVal;
 
+  // Rebuild type dropdown from actual deal data
+  const typeSel     = document.getElementById('deal-type-filter');
+  const prevType    = typeSel.value;
+  const types       = [...new Set(DB.getDeals().map(d => d.type || '').filter(Boolean))].sort();
+  typeSel.innerHTML = '<option value="">All Types</option>';
+  types.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t; o.textContent = t;
+    typeSel.appendChild(o);
+  });
+  typeSel.value = prevType;
+
   const clientId = sel.value;
+  const type     = typeSel.value;
   let deals = DB.getDeals();
   if (clientId) deals = deals.filter(d => d.clientId === clientId);
+  if (type)     deals = deals.filter(d => (d.type || '') === type);
   if (status)   deals = deals.filter(d => d.status === status);
   if (search)   deals = deals.filter(d =>
     d.name.toLowerCase().includes(search) ||
@@ -428,32 +490,17 @@ function renderAllDeals() {
 
   const el = document.getElementById('deals-body');
   if (!deals.length) {
-    el.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:44px;color:var(--text-3);font-size:13px;">No deals found</td></tr>`;
+    el.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:44px;color:var(--text-3);font-size:13px;">No deals found</td></tr>`;
     return;
   }
-  el.innerHTML = deals.map(d => `
-    <tr>
-      <td class="fw7">${esc(d.name)}</td>
-      <td class="txt2">${esc(map[d.clientId] || '—')}</td>
-      <td class="fw7 txt-emerald">${formatCurrency(d.value)}</td>
-      <td>${badge(d.status)}</td>
-      <td class="txt3">${formatDate(d.date)}</td>
-      <td>
-        <button class="btn btn-danger btn-sm btn-icon" onclick="deleteDeal('${d.id}')">
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14H6L5 6"/>
-          </svg>
-        </button>
-      </td>
-    </tr>
-  `).join('');
+  el.innerHTML = deals.map(d => dealRowHtml(d, map[d.clientId] || '—', 8, true)).join('');
 }
 
 function bindDealFilters() {
   document.getElementById('deal-search').addEventListener('input', renderAllDeals);
   document.getElementById('deal-status-filter').addEventListener('change', renderAllDeals);
   document.getElementById('deal-client-filter').addEventListener('change', renderAllDeals);
+  document.getElementById('deal-type-filter').addEventListener('change', renderAllDeals);
 }
 
 // ── ADD CLIENT ────────────────────────────────────────────────

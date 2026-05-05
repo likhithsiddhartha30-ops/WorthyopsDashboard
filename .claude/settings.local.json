@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:script.google.com)",
+      "WebFetch(domain:script.googleusercontent.com)",
+      "Bash(grep -v \"^\\\\.$\")",
+      "Bash(grep -v \"^\\\\.\\\\.$\")"
+    ]
+  }
+}
